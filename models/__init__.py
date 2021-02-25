@@ -6,5 +6,3 @@ from .models import (
 )
 from .models import Base
 from .base import Session, db_uri
-
-from .db_bot_functions import *
