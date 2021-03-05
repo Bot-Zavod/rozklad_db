@@ -61,7 +61,7 @@ class User(Base):
 
     def __repr__(self):
         return "<User(chat_id='{}', username='{}', university='{}')>".format(
-            self.user_id, self.username, self.university
+            self.chat_id, self.username, self.university_id
         )
 
 
@@ -95,7 +95,7 @@ class UserAction(Base):
     def __repr__(self):
         return (
             "<Action(id='{}', chat_id='{}', action='{}', time='{}')>".format(
-                self.id, self.chat_id, self.action, self.time
+                self.id, self.chat_id, self.action, self.time_clicked
             )
         )
 

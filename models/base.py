@@ -1,13 +1,13 @@
 from sqlalchemy.engine.url import URL
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 from os import path, environ
 import sys
 
 from sqlalchemy import select
-# from progressbar import progressbar
 
+# from progressbar import progressbar
 
 
 # from dotenv import load_dotenv
@@ -34,10 +34,11 @@ db_uri = sqlite_uri  # passed to alembic
 sqlite_engine = create_engine(sqlite_uri)
 postgres_engine = create_engine(postgres_uri)
 
-sq_session = sessionmaker(bind=sqlite_engine)()
-pg_session = sessionmaker(bind=postgres_engine)()
+sq_session = sessionmaker(bind=sqlite_engine)
+pg_session = sessionmaker(bind=postgres_engine)
 
-Session = pg_session
+
+Session = scoped_session(pg_session)
 
 
 # print("\nDB_URI: ", db_uri, "\n")
@@ -47,6 +48,7 @@ Session = pg_session
 
 # import ..models as m
 # import models_old as m_old
+
 
 def create_university():
     """ create university """
@@ -159,14 +161,16 @@ def create_actions():
     user_action_objects = []
 
     action_dict = {"today": 1, "tomorrow": 2, "week": 3, "next_week": 4}
-    old_user_actions = sq_session.query(m_old.Action).filter(m_old.Action.id>16024).all()
-    
+    old_user_actions = (
+        sq_session.query(m_old.Action).filter(m_old.Action.id > 16024).all()
+    )
+
     print("\ncreating actions")
     for action in progressbar(old_user_actions):
         user_action = m.UserAction(
-            chat_id = action.user_id,
-            action = action_dict[action.comment],
-            time_clicked = action.time
+            chat_id=action.user_id,
+            action=action_dict[action.comment],
+            time_clicked=action.time,
         )
         # user_action_objects.append(user_action)
         pg_session.add(user_action)
@@ -213,7 +217,6 @@ def create_timers():
             pg_session.rollback()
             # print(e)
     # print("errors: ", errors)
-
 
 
 # m.Base.metadata.drop_all(postgres_engine)  # deletes all tables and data
