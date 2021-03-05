@@ -15,13 +15,9 @@ from sqlalchemy.sql import func
 
 def new_actions():
     chat_id = 384341805
-    university_id, user_data = (
-        session.query(User.university_id, User.user_data)
-        .filter(User.chat_id == chat_id)
-        .first()
-    )
+    act = session.query(UserAction).get(50000)
     session.close()
-    print(university_id, user_data)
+    print(act)
 
 
 if __name__ == "__main__":
