@@ -1,13 +1,13 @@
 from sqlalchemy.engine.url import URL
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from os import path, environ
 import sys
 
 from sqlalchemy import select
-
 # from progressbar import progressbar
+
 
 
 # from dotenv import load_dotenv
@@ -23,20 +23,23 @@ postgres_db = {
 }
 postgres_uri = URL(**postgres_db)
 
-base_dir = path.dirname(path.dirname(path.dirname(path.abspath(__file__))))
-sqlite_dir = path.join(base_dir, "db.sqlite")
+base_dir = path.dirname(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
+sqlite_dir = path.join(base_dir, "new.sqlite")
 sqlite_db = {"drivername": "sqlite", "database": sqlite_dir}
 sqlite_uri = URL(**sqlite_db)
 
-db_uri = sqlite_uri  # passed to alembic
-
+db_uri = postgres_uri  # passed to alembic
 
 sqlite_engine = create_engine(sqlite_uri)
-postgres_engine = create_engine(postgres_uri)
+postgres_engine = create_engine(postgres_uri,
+                                pool_size=10,
+                                max_overflow=2,
+                                pool_recycle=300,
+                                pool_pre_ping=True,
+                                pool_use_lifo=True)
 
 sq_session = sessionmaker(bind=sqlite_engine)
 pg_session = sessionmaker(bind=postgres_engine)
-
 
 Session = scoped_session(pg_session)
 
@@ -46,7 +49,7 @@ Session = scoped_session(pg_session)
 # echo_value = "-db" in sys.argv
 # print("-" * 6, "SQLalchemy logging is " + str(echo_value), "-" * 6, "\n")
 
-# import ..models as m
+# import models as m
 # import models_old as m_old
 
 
@@ -54,13 +57,23 @@ def create_university():
     """ create university """
 
     print("\ncreating university")
-    university = m.University(
+    universities = [
+        m.University(
+        id=1,
         name="Одеський національний економічний університет",
         students_number=2000,
-        engine_name="engine_v1",
+        engine_name="mkr_api",
         engine_parameters={"api_url": "http://asu.oneu.edu.ua:1080"},
-    )
-    pg_session.add(university)
+        ),
+        m.University(
+        id=2,
+        name="Одеський національний морський університет",
+        students_number=5000,
+        engine_name="mkr_api",
+        engine_parameters={"api_url": "http://193.189.127.179:5011"},
+        ),
+    ]
+    pg_session.bulk_save_objects(universities)
     pg_session.commit()
 
 
@@ -161,23 +174,21 @@ def create_actions():
     user_action_objects = []
 
     action_dict = {"today": 1, "tomorrow": 2, "week": 3, "next_week": 4}
-    old_user_actions = (
-        sq_session.query(m_old.Action).filter(m_old.Action.id > 16024).all()
-    )
-
+    old_user_actions = sq_session.query(m_old.Action).filter(m_old.Action.id>16024).all()
+    
     print("\ncreating actions")
     for action in progressbar(old_user_actions):
         user_action = m.UserAction(
-            chat_id=action.user_id,
-            action=action_dict[action.comment],
-            time_clicked=action.time,
+            chat_id = action.user_id,
+            action = action_dict[action.comment],
+            time_clicked = action.time
         )
-        # user_action_objects.append(user_action)
-        pg_session.add(user_action)
-        pg_session.commit()
+        user_action_objects.append(user_action)
+        # pg_session.add(user_action)
+        # pg_session.commit()
 
-    # pg_session.add_all(user_action_objects)
-    # pg_session.commit()
+    pg_session.add_all(user_action_objects)
+    pg_session.commit()
 
 
 def create_groups():
@@ -197,7 +208,7 @@ def create_groups():
             pg_session.rollback()
             # print(e)
 
-    # print("errors: ", errors)
+    print("errors: ", errors)
 
 
 def create_timers():
@@ -216,11 +227,13 @@ def create_timers():
             errors += 1
             pg_session.rollback()
             # print(e)
-    # print("errors: ", errors)
+    print("errors: ", errors)
+
 
 
 # m.Base.metadata.drop_all(postgres_engine)  # deletes all tables and data
 # m.Base.metadata.create_all(postgres_engine)
+
 
 # create_university()
 # create_users()
@@ -229,24 +242,5 @@ def create_timers():
 # create_actions()
 
 
-# from sqlalchemy.sql import func
-# import csv
-# from dateutil import tz
-# from datetime import datetime, timedelta
-
-
-# kiev_tz = tz.gettz("Europe/Kiev")
-# current_time = datetime.now(kiev_tz)
-# day_ago = current_time - timedelta(days=7)
-
-# new_actions = pg_session.query(
-#                 m.UserAction
-#             ).join(m.User).filter(m.UserAction.time_clicked > day_ago).filter(m.User.user_data["type"].astext == "teacher").count()
-
-# total_users = pg_session.query(
-#                 m.UserAction
-#             ).join(m.User).filter(m.UserAction.time_clicked > day_ago).filter(m.User.user_data["type"].astext == "teacher").distinct(m.UserAction.chat_id).count()
-
-# news_msg = f"{total_users} юзеров сделали {new_actions} запросов:\n"
-# print(news_msg)
+# sq_session.close()
 # pg_session.close()

@@ -8,16 +8,18 @@ from models import *
 from models import Session as session
 
 from datetime import datetime, timedelta
-from dateutil import tz
 
 from sqlalchemy.sql import func
 
+from progressbar import progressbar
 
 def new_actions():
     chat_id = 384341805
-    act = session.query(UserAction).get(50000)
+    users = session.query(User).all()
+    for user in progressbar(users):
+        user.is_banned = True
+    session.commit()
     session.close()
-    print(act)
 
 
 if __name__ == "__main__":
