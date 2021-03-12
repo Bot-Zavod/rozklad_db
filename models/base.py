@@ -9,9 +9,8 @@ from sqlalchemy import select
 # from progressbar import progressbar
 
 
-
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 postgres_db = {
     "drivername": "postgres",
